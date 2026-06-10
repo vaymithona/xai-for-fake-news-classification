@@ -1,13 +1,13 @@
 # Running the Fake News XAI Notebook on an HPC Server (Ubuntu + A40 GPU)
 
-Step-by-step guide to run `Fake_News_Classification_Final copy.ipynb` on an HPC
+Step-by-step guide to run `Fake_News_Classification_Final.ipynb` on an HPC
 cluster after cloning the repository from GitHub. Target environment: **Ubuntu**,
 **NVIDIA A40 (48 GB)**, typically with a **SLURM** scheduler and either the
 `module` system or `conda`.
 
 The notebook trains classical models (LogReg, Random Forest, XGBoost, LightGBM),
 an LSTM, and a frozen **DistilBERT** encoder + MLP head, then produces the XAI
-section (SHAP, LIME, attention, Integrated Gradients). It auto-detects the GPU and
+section (**SHAP**, applied uniformly to every model). It auto-detects the GPU and
 falls back to CPU if none is found.
 
 ---
@@ -116,13 +116,13 @@ pip install torch --index-url https://download.pytorch.org/whl/cu121
 
 # Everything else (these are CPU/GPU-agnostic):
 pip install numpy pandas matplotlib seaborn scikit-learn xgboost lightgbm nltk \
-            transformers shap lime captum \
+            transformers shap \
             jupyterlab ipykernel nbconvert
 ```
 
 > The notebook's own `!pip install` cell installs the base libraries too, but doing it
-> here gives you the correct **GPU** PyTorch build and the XAI extras (`shap`, `lime`,
-> `captum`) up front. You can safely skip the in-notebook install cell.
+> here gives you the correct **GPU** PyTorch build and the XAI extra (`shap`) up front.
+> You can safely skip the in-notebook install cell.
 
 Register the env as a Jupyter kernel (only needed for the interactive route, Step 6a):
 
@@ -220,10 +220,10 @@ nvidia-smi                              # confirm the A40 is visible
 
 jupyter nbconvert --to notebook --execute --inplace \
   --ExecutePreprocessor.timeout=-1 \
-  "Fake_News_Classification_Final copy.ipynb"
+  "Fake_News_Classification_Final.ipynb"
 
 # Also export a static HTML report of the run (figures included):
-jupyter nbconvert --to html "Fake_News_Classification_Final copy.ipynb"
+jupyter nbconvert --to html "Fake_News_Classification_Final.ipynb"
 ```
 
 Submit and monitor:
@@ -235,7 +235,7 @@ tail -f fakenews_<jobid>.log    # follow progress
 ```
 
 When it finishes, the notebook is updated in place with all outputs, and
-`Fake_News_Classification_Final copy.html` holds a shareable report.
+`Fake_News_Classification_Final.html` holds a shareable report.
 
 ---
 
