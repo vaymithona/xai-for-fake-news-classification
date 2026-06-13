@@ -16,3 +16,5 @@ prototype/__results___files/
 
 # Local Claude settings
 .claude/settings.local.json
+
+Report/
