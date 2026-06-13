@@ -1,16 +1,3 @@
----
-title: Fake News Classifier XAI Demo
-emoji: 🔍
-colorFrom: red
-colorTo: blue
-sdk: gradio
-sdk_version: "4.44.0"
-app_file: app.py
-pinned: false
-license: mit
-short_description: Six fake-news classifiers with SHAP explanations on WELFake
----
-
 # XAI for Fake News Classification
 
 Interactive demo for a thesis comparing six fake-news classifiers on the
