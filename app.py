@@ -3,12 +3,12 @@ Gradio web app for the XAI Fake News Classifier thesis demo.
 Deployed to HuggingFace Spaces (CPU Basic tier).
 
 Single-page, one-click design: paste an article, press **Analyze**, and the whole
-story renders top-to-bottom on one screen — no tabs to click through.
+story renders top-to-bottom on one screen - no tabs to click through.
 
 Two modes, driven by the model dropdown:
-  • "All 6 Models (compare)" — run all six, show the consensus verdict + per-model
+  • "All 6 Models (compare)" - run all six, show the consensus verdict + per-model
     confidence bars, and explain the best model (DistilBERT).
-  • A specific model         — focus on just that model: its verdict + its SHAP.
+  • A specific model         - focus on just that model: its verdict + its SHAP.
 """
 import gradio as gr
 import pandas as pd
@@ -21,16 +21,16 @@ if not ARTIFACTS_MISSING:
     from prototype.shap_explainer import compute_shap
 
 # ── Palette ─────────────────────────────────────────────────────────────────
-_FAKE = '#dc2626'   # red  — pushes Fake
-_REAL = '#2563eb'   # blue — pushes Real
-_SPLIT = '#b45309'  # amber — tie
+_FAKE = '#dc2626'   # red  - pushes Fake
+_REAL = '#2563eb'   # blue - pushes Real
+_SPLIT = '#b45309'  # amber - tie
 _FAKE_BG = '#fef2f2'
 _REAL_BG = '#eff6ff'
 _TRACK = '#f1f5f9'
 
 # Dropdown: "All 6 Models" compares every model and explains the best one (DistilBERT).
 _ALL = 'All 6 Models (compare)'
-_BEST_MODEL = 'DistilBERT + MLP'   # highest test accuracy (~96%) in the notebook
+_BEST_MODEL = 'DistilBERT'   # best test accuracy in the notebook
 DROPDOWN_CHOICES = [_ALL] + MODEL_NAMES
 
 
@@ -62,7 +62,7 @@ def _verdict_banner(pred_df: pd.DataFrame, target_model: str) -> str:
         f'average confidence <b>{conf:.0f}%</b></div>'
         f'<div style="margin-top:4px;color:#64748b;font-size:0.88em;">'
         f'Explanation below is for <b>{target_model}</b> '
-        f'(the best-performing model, ~96% test accuracy).</div>'
+        f'(the best-performing model, ~99% test accuracy).</div>'
         f'</div>'
     )
 
@@ -78,7 +78,7 @@ def _single_banner(model: str, p_fake: float) -> str:
         f'<div style="background:{bg};border:1px solid {color}33;border-left:6px solid {color};'
         f'border-radius:10px;padding:18px 22px;margin:4px 0 14px;">'
         f'<div style="font-size:1.6em;font-weight:800;color:{color};letter-spacing:.5px;">'
-        f'{icon} {model} &mdash; {label}</div>'
+        f'{icon} {model} - {label}</div>'
         f'<div style="margin-top:6px;color:#334155;font-size:1.0em;">'
         f'Confidence <b>{conf:.0f}%</b> &nbsp;&middot;&nbsp; P(Fake) = <b>{pct:.0f}%</b></div>'
         f'<div style="margin-top:4px;color:#64748b;font-size:0.88em;">'
@@ -136,13 +136,25 @@ _PLACEHOLDER = (
     '<div style="padding:1.4em;text-align:center;color:#94a3b8;border:1px dashed #cbd5e1;'
     'border-radius:10px;">Paste an article above and press '
     '<b>Analyze</b> to see the verdict, per-model confidence, and the SHAP '
-    'explanation — all here.</div>'
+    'explanation.</div>'
 )
 
 
 def _empty(msg_html: str):
     """Standard 3-tuple (banner, chart, shap) for non-result states."""
     return msg_html, '', ''
+
+
+# Invisible spacer: gives the loading tracker a clean, full-width home while the
+# previous result is wiped out - nothing shows through behind the progress bar.
+_CLEARED = '<div style="min-height:80px"></div>'
+
+
+def _clear():
+    """Wipe all three outputs the instant Analyze is pressed (runs before
+    analyse), so a previous result or the placeholder never bleeds through
+    behind the loading tracker."""
+    return _CLEARED, '', ''
 
 
 def analyse(text: str, model_choice: str, progress=gr.Progress(track_tqdm=True)):
@@ -168,7 +180,7 @@ def analyse(text: str, model_choice: str, progress=gr.Progress(track_tqdm=True))
 
     note = ('<p style="color:#b45309;font-size:0.82em;margin:6px 0 0;">'
             '&#9888; DistilBERT SHAP can take up to ~45 s on CPU; other models finish in &lt;5 s.</p>'
-            if target_model == 'DistilBERT + MLP' else '')
+            if target_model == 'DistilBERT' else '')
 
     progress(0.35, desc=f'Computing SHAP for {target_model}…')
     shap_html = compute_shap(text, target_model)
@@ -179,14 +191,13 @@ def analyse(text: str, model_choice: str, progress=gr.Progress(track_tqdm=True))
 
 # ── Gradio UI ─────────────────────────────────────────────────────────────
 
-with gr.Blocks(title='Fake News Classifier — XAI Demo',
+with gr.Blocks(title='Explainable AI for Fake-News Classification',
                theme=gr.themes.Soft(primary_hue='blue')) as demo:
 
     gr.Markdown(
-        '# 📰 Fake News Classifier — XAI Demo\n'
+        '# Explainable AI for Fake-News Classification\n'
         'Six models trained on **WELFake** (~72 k articles). Paste an article, press '
-        '**Analyze**, and see the verdict and *why* the model decided — all on one screen.\n'
-        '> _Thesis project: Explainable AI for Fake News Classification_'
+        '**Analyze**, and see the verdict and *why* the model decided all on one screen.\n'
     )
 
     with gr.Row():
@@ -199,16 +210,16 @@ with gr.Blocks(title='Fake News Classifier — XAI Demo',
         with gr.Column(scale=1, min_width=240):
             model_dd = gr.Dropdown(
                 choices=DROPDOWN_CHOICES,
-                value=_ALL,
+                value=_BEST_MODEL,
                 label='Model',
-                info='“Compare” runs all six; pick one to focus on its prediction + SHAP.',
+                info='Defaults to DistilBERT (best model); “Compare” runs all six.',
             )
             run_btn = gr.Button('🔍 Analyze', variant='primary', size='lg')
 
     gr.Examples(
         examples=EXAMPLES,
         inputs=[text_input],
-        label='Example articles — click to load, then press Analyze',
+        label='Example articles below, click to load, then press Analyze',
         examples_per_page=3,
     )
 
@@ -219,9 +230,18 @@ with gr.Blocks(title='Fake News Classifier — XAI Demo',
     shap_out = gr.HTML()
 
     run_btn.click(
+        # Step 1: wipe the previous result the instant Analyze is pressed, so
+        # only the loading tracker shows - nothing bleeds through behind it.
+        fn=_clear,
+        outputs=[verdict_out, chart_out, shap_out],
+        show_progress='hidden',
+    ).then(
+        # Step 2: run the analysis, with ONE progress tracker on the (now empty)
+        # verdict box instead of one per output.
         fn=analyse,
         inputs=[text_input, model_dd],
         outputs=[verdict_out, chart_out, shap_out],
+        show_progress_on=[verdict_out],
     )
 
 if __name__ == '__main__':

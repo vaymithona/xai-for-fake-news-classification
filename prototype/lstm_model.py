@@ -1,5 +1,5 @@
 """
-LSTMClassifier — verbatim copy of cell 49 in the training notebook.
+LSTMClassifier - verbatim copy of cell 49 in the training notebook.
 The class definition must match training exactly for torch.load state_dict
 to work without key errors.
 """

@@ -13,7 +13,7 @@ binary Real / Fake).
 | XGBoost | Boosted trees | TF-IDF |
 | LightGBM | Boosted trees | TF-IDF |
 | BiLSTM | Recurrent | Learned word embeddings |
-| DistilBERT + MLP | Transformer | Frozen [CLS] embeddings |
+| DistilBERT | Transformer | Fine-tuned end-to-end |
 
 ## Features
 
@@ -32,7 +32,7 @@ python app.py
 ```
 
 Artifacts (model weights) must be present in `artifacts/` — generate them by
-running the notebook (`Fake_News_Classification_Final.ipynb`) end-to-end on
+running the notebook (`xai-for-fake-news-classification.ipynb`) end-to-end on
 a machine with the WELFake dataset, then running the saving cell.
 
 > Models were trained on Kaggle (2× NVIDIA T4 GPU, ~3 h 10 m full run).

@@ -23,12 +23,12 @@ ARTIFACTS_MISSING = not (ARTIFACTS / 'config.json').exists()
 if ARTIFACTS_MISSING:
     CONFIG = {}
     LSTM_MAX_LEN = LSTM_MAX_VOCAB = LSTM_EMBED_DIM = LSTM_HIDDEN_DIM = None
-    BERT_MODEL_NAME = BERT_MAX_LEN = BERT_BATCH_SIZE = None
+    BERT_MODEL_NAME = BERT_MAX_LEN = BERT_BATCH_SIZE = BERT_FINETUNED_DIR = None
     TFIDF = LR_MODEL = RF_MODEL = XGB_MODEL = LGBM_MODEL = None
-    VOCAB = LSTM_MODEL = TOKENIZER = ENCODER = HEAD = None
+    VOCAB = LSTM_MODEL = TOKENIZER = BERT_MODEL = None
     MODEL_NAMES = [
         'Logistic Regression', 'Random Forest',
-        'XGBoost', 'LightGBM', 'LSTM', 'DistilBERT + MLP',
+        'XGBoost', 'LightGBM', 'LSTM', 'DistilBERT',
     ]
     MODELS = {}
 else:
@@ -45,6 +45,7 @@ else:
     BERT_MODEL_NAME = CONFIG['BERT_MODEL_NAME']
     BERT_MAX_LEN    = CONFIG['BERT_MAX_LEN']
     BERT_BATCH_SIZE = CONFIG.get('BERT_BATCH_SIZE', 32)
+    BERT_FINETUNED_DIR = CONFIG.get('BERT_FINETUNED_DIR', 'distilbert_finetuned')
 
     # ── TF-IDF vectorizer ───────────────────────────────────────────────────────
     TFIDF = joblib.load(ARTIFACTS / 'tfidf.joblib')
@@ -71,22 +72,15 @@ else:
     )
     LSTM_MODEL.train(False)
 
-    # ── DistilBERT encoder + MLP head ───────────────────────────────────────────
-    from transformers import AutoTokenizer, AutoModel  # noqa: E402
-
-    from prototype.bert_head import ClassifierHead  # noqa: E402
-
-    TOKENIZER = AutoTokenizer.from_pretrained(BERT_MODEL_NAME)
-    ENCODER   = AutoModel.from_pretrained(BERT_MODEL_NAME).to(DEVICE)
-    ENCODER.train(False)
-    for p in ENCODER.parameters():
-        p.requires_grad = False
-
-    HEAD = ClassifierHead(in_dim=768).to(DEVICE)
-    HEAD.load_state_dict(
-        torch.load(ARTIFACTS / 'bert_head.pt', map_location=DEVICE)
+    # ── DistilBERT (fine-tuned, self-contained model + tokenizer) ───────────────
+    from transformers import (  # noqa: E402
+        AutoTokenizer, AutoModelForSequenceClassification,
     )
-    HEAD.train(False)
+
+    BERT_DIR   = ARTIFACTS / BERT_FINETUNED_DIR
+    TOKENIZER  = AutoTokenizer.from_pretrained(BERT_DIR)
+    BERT_MODEL = AutoModelForSequenceClassification.from_pretrained(BERT_DIR).to(DEVICE)
+    BERT_MODEL.train(False)
 
     # ── Unified model registry ──────────────────────────────────────────────────
     MODEL_NAMES = [
@@ -95,14 +89,14 @@ else:
         'XGBoost',
         'LightGBM',
         'LSTM',
-        'DistilBERT + MLP',
+        'DistilBERT',
     ]
 
     MODELS = {
-        'Logistic Regression': LR_MODEL,
-        'Random Forest':       RF_MODEL,
-        'XGBoost':             XGB_MODEL,
-        'LightGBM':            LGBM_MODEL,
-        'LSTM':                LSTM_MODEL,
-        'DistilBERT + MLP':    (ENCODER, HEAD),
+        'Logistic Regression':     LR_MODEL,
+        'Random Forest':           RF_MODEL,
+        'XGBoost':                 XGB_MODEL,
+        'LightGBM':                LGBM_MODEL,
+        'LSTM':                    LSTM_MODEL,
+        'DistilBERT': BERT_MODEL,
     }

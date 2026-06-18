@@ -9,7 +9,7 @@ import torch
 from prototype.model_loader import (
     TFIDF, VOCAB, LSTM_MAX_LEN,
     BERT_MAX_LEN, BERT_BATCH_SIZE,
-    TOKENIZER, ENCODER, HEAD,
+    TOKENIZER, BERT_MODEL,
     MODELS, MODEL_NAMES, DEVICE,
 )
 from prototype.preprocessing import cleaning, encode
@@ -50,10 +50,9 @@ def lstm_proba_fn(texts):
 # ── DistilBERT wrapper ────────────────────────────────────────────────────────
 
 def bert_proba_fn(texts):
-    """Raw text -> DistilBERT [CLS] -> MLP head -> [[P(Real), P(Fake)], ...]."""
+    """Raw text -> fine-tuned DistilBERT -> [[P(Real), P(Fake)], ...]."""
     texts = [str(t) for t in texts]
-    ENCODER.train(False)
-    HEAD.train(False)
+    BERT_MODEL.train(False)
     probs = []
     with torch.no_grad():
         for s in range(0, len(texts), BERT_BATCH_SIZE):
@@ -63,10 +62,10 @@ def bert_proba_fn(texts):
                 truncation=True,
                 max_length=BERT_MAX_LEN,
                 return_tensors='pt',
+                return_token_type_ids=False,   # DistilBERT has no token_type_ids
             ).to(DEVICE)
-            cls = ENCODER(**enc).last_hidden_state[:, 0, :].float()
-            logit = HEAD(cls).squeeze(-1)
-            probs.append(torch.sigmoid(logit).cpu().numpy())
+            logits = BERT_MODEL(**enc).logits
+            probs.append(torch.softmax(logits, dim=1)[:, 1].cpu().numpy())
     p_fake = np.concatenate(probs).reshape(-1)
     return np.column_stack([1.0 - p_fake, p_fake])
 
@@ -77,8 +76,8 @@ _CLASSICAL_MODELS = ('Logistic Regression', 'Random Forest', 'XGBoost', 'LightGB
 
 _PROBA_FN = {
     **{name: make_classical_proba_fn(MODELS[name]) for name in _CLASSICAL_MODELS},
-    'LSTM':             lstm_proba_fn,
-    'DistilBERT + MLP': bert_proba_fn,
+    'LSTM':                    lstm_proba_fn,
+    'DistilBERT': bert_proba_fn,
 }
 
 

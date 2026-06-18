@@ -17,12 +17,12 @@ _MASKER = shap.maskers.Text(r"\W+")
 # Number of masked samples per model family (SHAP's max_evals parameter).
 # DistilBERT is slow on CPU, so we cap it to stay under HF Spaces' timeout.
 _BUDGET = {
-    'Logistic Regression': 500,
-    'Random Forest':       500,
-    'XGBoost':             500,
-    'LightGBM':            500,
-    'LSTM':                500,
-    'DistilBERT + MLP':    100,
+    'Logistic Regression':     500,
+    'Random Forest':           500,
+    'XGBoost':                 500,
+    'LightGBM':                500,
+    'LSTM':                    500,
+    'DistilBERT': 100,
 }
 
 
@@ -86,7 +86,7 @@ def compute_shap(text: str, model_name: str) -> str:
     )
     full_heading = (
         '<div style="font-weight:700;color:#0f172a;margin:8px 0 4px;">'
-        'Full article — every word shaded by influence '
+        'Full article - every word shaded by influence '
         '<span style="font-weight:400;color:#64748b;font-size:0.85em">'
         '(<span style="color:#d73027">red = Fake</span>, '
         '<span style="color:#4575b4">blue = Real</span>; hover for the score)</span></div>'
